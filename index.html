@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kalyan — Content Creator & Video Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a0514;
+    --bg-1:#14062b;
+    --ink:#fff8ee;
+    --ink-dim:rgba(255,248,238,0.65);
+    --ink-faint:rgba(255,248,238,0.35);
+    --c-pink:#ff2e93;
+    --c-orange:#ff8a3d;
+    --c-yellow:#ffd93d;
+    --c-lime:#a8ff5c;
+    --c-cyan:#4df0ff;
+    --c-violet:#8a5cff;
+    --c-magenta:#d946ef;
+    --grad-main:linear-gradient(135deg,#ff2e93 0%,#ff8a3d 25%,#ffd93d 50%,#4df0ff 75%,#8a5cff 100%);
+    --grad-warm:linear-gradient(135deg,#ff2e93,#ff8a3d,#ffd93d);
+    --grad-cool:linear-gradient(135deg,#4df0ff,#8a5cff,#d946ef);
+    --display:'Bricolage Grotesque',sans-serif;
+    --serif:'Instrument Serif',serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{overflow-x:hidden;}
+  body{
+    background:var(--bg-0);
+    color:var(--ink);
+    font-family:var(--display);
+    font-weight:400;
+    line-height:1.4;
+    min-height:100vh;
+    position:relative;
+    cursor:none;
+  }
+
+  /* grainy noise overlay */
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    pointer-events:none;
+    z-index:100;
+    opacity:0.08;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* animated gradient mesh background */
+  .mesh-bg{
+    position:fixed;inset:0;z-index:-1;
+    background:var(--bg-0);
+    overflow:hidden;
+  }
+  .mesh-bg::before,.mesh-bg::after{
+    content:"";position:absolute;
+    width:70vmax;height:70vmax;
+    border-radius:50%;
+    filter:blur(110px);
+    opacity:0.55;
+    animation:float-mesh 24s ease-in-out infinite;
+  }
+  .mesh-bg::before{
+    background:radial-gradient(circle,var(--c-pink),transparent 60%);
+    top:-20%;left:-20%;
+  }
+  .mesh-bg::after{
+    background:radial-gradient(circle,var(--c-violet),transparent 60%);
+    bottom:-30%;right:-20%;
+    animation-delay:-12s;
+  }
+  .mesh-blob-3{
+    position:fixed;top:40%;left:50%;
+    width:40vmax;height:40vmax;
+    border-radius:50%;
+    background:radial-gradient(circle,var(--c-cyan),transparent 60%);
+    filter:blur(120px);
+    opacity:0.3;
+    transform:translate(-50%,-50%);
+    z-index:-1;
+    animation:float-mesh 18s ease-in-out infinite reverse;
+  }
+  @keyframes float-mesh{
+    0%,100%{transform:translate(0,0) scale(1);}
+    33%{transform:translate(10%,-5%) scale(1.1);}
+    66%{transform:translate(-8%,8%) scale(0.95);}
+  }
+
+  /* custom cursor */
+  .cursor-dot,.cursor-ring{
+    position:fixed;top:0;left:0;
+    pointer-events:none;z-index:9999;
+    border-radius:50%;
+    transition:transform 0.15s ease-out,width 0.3s,height 0.3s,background 0.3s;
+  }
+  .cursor-dot{
+    width:8px;height:8px;
+    background:var(--c-yellow);
+    transform:translate(-50%,-50%);
+    mix-blend-mode:difference;
+  }
+  .cursor-ring{
+    width:36px;height:36px;
+    border:2px solid var(--c-yellow);
+    transform:translate(-50%,-50%);
+    mix-blend-mode:difference;
+    transition:transform 0.2s ease-out,width 0.25s,height 0.25s,border-color 0.25s;
+  }
+  body.cursor-hover .cursor-ring{
+    width:64px;height:64px;
+    border-color:var(--c-pink);
+    background:rgba(255,46,147,0.15);
+  }
+  @media (max-width:768px){.cursor-dot,.cursor-ring{display:none;}body{cursor:auto;}}
+
+  /* nav */
+  nav{
+    position:fixed;top:24px;left:50%;
+    transform:translateX(-50%);
+    z-index:50;
+    display:flex;gap:6px;
+    padding:8px;
+    background:rgba(20,6,43,0.6);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:100px;
+  }
+  nav a{
+    color:var(--ink-dim);
+    text-decoration:none;
+    font-size:13px;font-weight:600;
+    padding:8px 16px;
+    border-radius:100px;
+    transition:all 0.25s;
+    letter-spacing:-0.01em;
+  }
+  nav a:hover{color:var(--ink);background:rgba(255,255,255,0.08);}
+
+  /* ticker */
+  .ticker{
+    position:fixed;top:0;left:0;right:0;
+    height:32px;
+    background:#fff8ee;
+    color:#0a0514;
+    overflow:hidden;
+    z-index:40;
+    display:flex;align-items:center;
+    border-bottom:1px solid #0a0514;
+  }
+  .ticker-track{
+    display:flex;
+    animation:ticker 40s linear infinite;
+    white-space:nowrap;
+    font-family:var(--mono);
+    font-size:12px;font-weight:600;
+    letter-spacing:0.02em;
+  }
+  .ticker-track span{padding:0 24px;display:inline-flex;align-items:center;gap:12px;}
+  .ticker-track .dot{display:inline-block;width:6px;height:6px;background:var(--c-pink);border-radius:50%;}
+  @keyframes ticker{to{transform:translateX(-50%);}}
+
+  /* hero */
+  .hero{
+    min-height:100vh;
+    padding:100px 6vw 80px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    position:relative;
+  }
+
+  .hero-meta{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:28px;
+    animation:fadeUp 0.8s ease-out 0.2s backwards;
+  }
+  .hero-meta .pulse{
+    width:8px;height:8px;
+    background:var(--c-lime);
+    border-radius:50%;
+    box-shadow:0 0 0 0 rgba(168,255,92,0.7);
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(168,255,92,0.7);}
+    70%{box-shadow:0 0 0 12px rgba(168,255,92,0);}
+    100%{box-shadow:0 0 0 0 rgba(168,255,92,0);}
+  }
+
+  .hero-name{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:clamp(56px,13vw,220px);
+    line-height:0.85;
+    letter-spacing:-0.04em;
+    position:relative;
+  }
+  .hero-name .line{display:block;overflow:hidden;}
+  .hero-name .word{
+    display:inline-block;
+    animation:slideUp 1s cubic-bezier(0.16,1,0.3,1) backwards;
+  }
+  .hero-name .word.gradient{
+    background:var(--grad-main);
+    background-size:200% 200%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:slideUp 1s cubic-bezier(0.16,1,0.3,1) backwards,gradShift 8s ease-in-out infinite;
+  }
+  .hero-name .word.italic{font-family:var(--serif);font-style:italic;font-weight:400;}
+  .hero-name .line:nth-child(1) .word{animation-delay:0.3s,0s;}
+  .hero-name .line:nth-child(2) .word{animation-delay:0.45s,0s;}
+  .hero-name .line:nth-child(3) .word{animation-delay:0.6s,0s;}
+
+  @keyframes slideUp{
+    from{transform:translateY(110%);opacity:0;}
+    to{transform:translateY(0);opacity:1;}
+  }
+  @keyframes gradShift{
+    0%,100%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+  }
+  @keyframes fadeUp{
+    from{transform:translateY(20px);opacity:0;}
+    to{transform:translateY(0);opacity:1;}
+  }
+
+  .hero-tagline{
+    margin-top:40px;
+    max-width:620px;
+    font-size:clamp(16px,1.6vw,20px);
+    color:var(--ink-dim);
+    line-height:1.5;
+    animation:fadeUp 0.8s ease-out 1.2s backwards;
+  }
+  .hero-tagline strong{color:var(--ink);font-weight:600;}
+
+  .hero-cta{
+    margin-top:48px;
+    display:flex;gap:14px;flex-wrap:wrap;
+    animation:fadeUp 0.8s ease-out 1.4s backwards;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 24px;
+    border-radius:100px;
+    font-family:var(--display);
+    font-size:14px;font-weight:600;
+    text-decoration:none;
+    transition:all 0.3s;
+    border:none;cursor:none;
+    letter-spacing:-0.01em;
+  }
+  .btn-primary{
+    background:var(--ink);
+    color:var(--bg-0);
+    position:relative;overflow:hidden;
+  }
+  .btn-primary::before{
+    content:"";position:absolute;inset:0;
+    background:var(--grad-main);
+    transform:translateX(-100%);
+    transition:transform 0.4s cubic-bezier(0.7,0,0.3,1);
+  }
+  .btn-primary span{position:relative;z-index:1;}
+  .btn-primary:hover::before{transform:translateX(0);}
+  .btn-primary:hover{color:var(--ink);}
+
+  .btn-ghost{
+    background:rgba(255,255,255,0.05);
+    color:var(--ink);
+    border:1px solid rgba(255,255,255,0.15);
+    backdrop-filter:blur(10px);
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);}
+
+  /* floating 3D editing tools */
+  .floating-scene{
+    position:absolute;inset:0;
+    pointer-events:none;
+    z-index:-1;
+  }
+  .float-tool{
+    position:absolute;
+    opacity:0.9;
+    filter:drop-shadow(0 20px 40px rgba(0,0,0,0.3));
+    transform-style:preserve-3d;
+    animation:floatTool 14s ease-in-out infinite;
+  }
+  .float-tool svg{width:100%;height:100%;}
+  .float-tool.t1{top:12%;right:8%;width:130px;height:130px;animation-delay:-2s;}
+  .float-tool.t2{top:55%;right:15%;width:90px;height:90px;animation-delay:-5s;}
+  .float-tool.t3{bottom:18%;right:30%;width:110px;height:110px;animation-delay:-8s;}
+  .float-tool.t4{top:30%;right:35%;width:70px;height:70px;animation-delay:-11s;}
+  @keyframes floatTool{
+    0%,100%{transform:translateY(0) rotate(0deg) rotateY(0deg);}
+    25%{transform:translateY(-20px) rotate(8deg) rotateY(180deg);}
+    50%{transform:translateY(10px) rotate(-5deg) rotateY(360deg);}
+    75%{transform:translateY(-15px) rotate(3deg) rotateY(540deg);}
+  }
+
+  /* video bg strip in hero */
+  .reel-strip{
+    position:absolute;
+    bottom:-4px;left:0;right:0;
+    height:120px;
+    overflow:hidden;
+    display:flex;
+    gap:16px;
+    padding:0 6vw;
+    opacity:0.4;
+    mask:linear-gradient(to top,black 0%,transparent 100%);
+    -webkit-mask:linear-gradient(to top,black 0%,transparent 100%);
+  }
+  .reel-strip-item{
+    flex:1;
+    border-radius:12px;
+    background:var(--grad-main);
+    background-size:300% 300%;
+    animation:gradShift 6s ease-in-out infinite;
+  }
+  .reel-strip-item:nth-child(2){animation-delay:-1.5s;}
+  .reel-strip-item:nth-child(3){animation-delay:-3s;}
+  .reel-strip-item:nth-child(4){animation-delay:-4.5s;}
+
+  /* section shared */
+  section{padding:120px 6vw;position:relative;}
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-bottom:16px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .section-label::before{
+    content:"";
+    width:40px;height:1px;
+    background:var(--grad-warm);
+  }
+  .section-title{
+    font-family:var(--display);
+    font-size:clamp(40px,6vw,88px);
+    font-weight:800;
+    letter-spacing:-0.03em;
+    line-height:0.95;
+    margin-bottom:28px;
+  }
+  .section-title em{font-family:var(--serif);font-style:italic;font-weight:400;}
+  .section-title .g{
+    background:var(--grad-main);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  /* ABOUT */
+  .about-grid{
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    gap:60px;
+    align-items:start;
+  }
+  @media (max-width:900px){.about-grid{grid-template-columns:1fr;}}
+  .about-text{
+    font-size:clamp(18px,1.6vw,22px);
+    line-height:1.55;
+    color:var(--ink-dim);
+  }
+  .about-text p{margin-bottom:20px;}
+  .about-text strong{color:var(--ink);font-weight:600;}
+  .about-text .highlight{
+    background:var(--grad-warm);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    font-weight:600;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  .stat{
+    padding:28px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    position:relative;overflow:hidden;
+    transition:all 0.4s;
+  }
+  .stat:hover{
+    border-color:rgba(255,255,255,0.2);
+    transform:translateY(-4px);
+  }
+  .stat::before{
+    content:"";
+    position:absolute;top:0;left:0;right:0;height:2px;
+    background:var(--grad-main);
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform 0.6s cubic-bezier(0.7,0,0.3,1);
+  }
+  .stat:hover::before{transform:scaleX(1);}
+  .stat-num{
+    font-family:var(--display);
+    font-size:48px;font-weight:800;
+    letter-spacing:-0.03em;
+    line-height:1;
+    background:var(--grad-main);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .stat-label{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-top:12px;
+  }
+
+  /* REELS */
+  .featured-reel{
+    margin-bottom:60px;
+    display:grid;
+    grid-template-columns:1fr 1.2fr;
+    gap:40px;
+    align-items:center;
+    padding:32px;
+    background:linear-gradient(135deg,rgba(255,46,147,0.08),rgba(138,92,255,0.08));
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:28px;
+    position:relative;
+    overflow:hidden;
+  }
+  @media (max-width:900px){.featured-reel{grid-template-columns:1fr;}}
+  .featured-badge{
+    position:absolute;
+    top:24px;right:24px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    background:var(--c-yellow);
+    color:var(--bg-0);
+    padding:6px 12px;
+    border-radius:100px;
+    font-weight:700;
+    z-index:2;
+  }
+  .featured-embed{
+    aspect-ratio:9/16;
+    max-width:320px;
+    margin:0 auto;
+    width:100%;
+    border-radius:16px;
+    overflow:hidden;
+    background:#000;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+    position:relative;
+  }
+  .featured-embed iframe{
+    width:100%;height:100%;
+    border:0;
+  }
+  .featured-info h3{
+    font-family:var(--display);
+    font-size:clamp(28px,3.5vw,44px);
+    font-weight:800;
+    letter-spacing:-0.02em;
+    line-height:1;
+    margin-bottom:16px;
+  }
+  .featured-info h3 em{font-family:var(--serif);font-style:italic;font-weight:400;}
+  .featured-info p{
+    color:var(--ink-dim);
+    font-size:16px;
+    line-height:1.55;
+    margin-bottom:20px;
+  }
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    padding:6px 12px;
+    border-radius:100px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    color:var(--ink-dim);
+    letter-spacing:0.02em;
+  }
+
+  .reels-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:24px;
+  }
+  @media (max-width:900px){.reels-grid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:600px){.reels-grid{grid-template-columns:1fr;}}
+  .reel-card{
+    position:relative;
+    border-radius:20px;
+    overflow:hidden;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    transition:all 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .reel-card:hover{
+    transform:translateY(-6px);
+    border-color:rgba(255,255,255,0.25);
+    box-shadow:0 30px 60px -20px rgba(255,46,147,0.3);
+  }
+  .reel-embed{
+    aspect-ratio:9/16;
+    background:#000;
+    position:relative;
+  }
+  .reel-embed iframe{
+    width:100%;height:100%;
+    border:0;display:block;
+  }
+  .reel-info{
+    padding:16px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .reel-info-text{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:0.02em;
+  }
+  .reel-info-num{
+    font-family:var(--display);
+    font-size:20px;font-weight:800;
+    background:var(--grad-main);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  /* SKILLS */
+  .skills-marquee{
+    overflow:hidden;
+    margin:0 -6vw;
+    padding:40px 0;
+    position:relative;
+  }
+  .skills-marquee::before,.skills-marquee::after{
+    content:"";position:absolute;top:0;bottom:0;width:100px;z-index:2;
+    pointer-events:none;
+  }
+  .skills-marquee::before{left:0;background:linear-gradient(to right,var(--bg-0),transparent);}
+  .skills-marquee::after{right:0;background:linear-gradient(to left,var(--bg-0),transparent);}
+  .skills-track{
+    display:flex;gap:24px;
+    animation:marquee 30s linear infinite;
+    width:max-content;
+  }
+  .skills-marquee:nth-child(even) .skills-track{animation-direction:reverse;animation-duration:35s;}
+  @keyframes marquee{to{transform:translateX(-50%);}}
+  .skill-chip{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 24px;
+    border-radius:100px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.1);
+    font-family:var(--display);
+    font-size:18px;font-weight:600;
+    white-space:nowrap;
+    letter-spacing:-0.01em;
+    transition:all 0.3s;
+  }
+  .skill-chip:hover{
+    background:var(--grad-main);
+    border-color:transparent;
+    transform:scale(1.05);
+  }
+  .skill-chip .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--c-pink);
+  }
+  .skill-chip:nth-child(3n) .dot{background:var(--c-yellow);}
+  .skill-chip:nth-child(3n+1) .dot{background:var(--c-cyan);}
+  .skill-chip:nth-child(3n+2) .dot{background:var(--c-lime);}
+
+  /* PROJECTS / ISRO */
+  .isro-card{
+    display:grid;
+    grid-template-columns:1fr 1.3fr;
+    gap:40px;
+    padding:48px;
+    background:linear-gradient(135deg,rgba(77,240,255,0.06),rgba(138,92,255,0.06));
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:32px;
+    position:relative;
+    overflow:hidden;
+  }
+  @media (max-width:900px){.isro-card{grid-template-columns:1fr;padding:28px;}}
+  .isro-card::before{
+    content:"";
+    position:absolute;
+    top:-50%;right:-20%;
+    width:500px;height:500px;
+    background:radial-gradient(circle,rgba(77,240,255,0.15),transparent 60%);
+    filter:blur(40px);
+    pointer-events:none;
+  }
+  .isro-visual{
+    position:relative;
+    aspect-ratio:1/1;
+    border-radius:20px;
+    background:linear-gradient(135deg,#0a0514,#14062b);
+    border:1px solid rgba(255,255,255,0.1);
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .isro-visual svg{width:100%;height:100%;}
+  .isro-content h3{
+    font-family:var(--display);
+    font-size:clamp(28px,3vw,40px);
+    font-weight:800;
+    letter-spacing:-0.02em;
+    line-height:1;
+    margin-bottom:20px;
+  }
+  .isro-content h3 em{font-family:var(--serif);font-style:italic;font-weight:400;}
+  .isro-content p{
+    color:var(--ink-dim);
+    font-size:16px;
+    line-height:1.55;
+    margin-bottom:16px;
+  }
+  .isro-meta{
+    display:flex;flex-wrap:wrap;gap:12px;
+    margin-bottom:24px;
+    padding:16px;
+    background:rgba(0,0,0,0.3);
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .isro-meta-item{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:0.05em;
+  }
+  .isro-meta-item strong{color:var(--c-cyan);display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px;}
+
+  /* WHY / FIT */
+  .fit-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+  }
+  @media (max-width:900px){.fit-grid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:500px){.fit-grid{grid-template-columns:1fr;}}
+  .fit-card{
+    padding:28px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    transition:all 0.4s;
+    position:relative;
+    overflow:hidden;
+  }
+  .fit-card:hover{
+    transform:translateY(-6px);
+    border-color:rgba(255,255,255,0.2);
+  }
+  .fit-card::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;
+    width:100%;height:100%;
+    opacity:0;
+    transition:opacity 0.4s;
+    pointer-events:none;
+  }
+  .fit-card:nth-child(1)::before{background:radial-gradient(circle at top left,rgba(255,46,147,0.15),transparent 60%);}
+  .fit-card:nth-child(2)::before{background:radial-gradient(circle at top left,rgba(255,217,61,0.15),transparent 60%);}
+  .fit-card:nth-child(3)::before{background:radial-gradient(circle at top left,rgba(77,240,255,0.15),transparent 60%);}
+  .fit-card:nth-child(4)::before{background:radial-gradient(circle at top left,rgba(168,255,92,0.15),transparent 60%);}
+  .fit-card:hover::before{opacity:1;}
+  .fit-icon{
+    width:48px;height:48px;
+    margin-bottom:20px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:14px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    position:relative;z-index:1;
+  }
+  .fit-icon svg{width:24px;height:24px;}
+  .fit-card h4{
+    font-family:var(--display);
+    font-size:20px;font-weight:800;
+    letter-spacing:-0.02em;
+    margin-bottom:8px;
+    position:relative;z-index:1;
+  }
+  .fit-card p{
+    color:var(--ink-dim);
+    font-size:14px;
+    line-height:1.5;
+    position:relative;z-index:1;
+  }
+
+  /* CONTACT */
+  .contact-section{
+    padding:120px 6vw 180px;
+    position:relative;
+    overflow:hidden;
+  }
+  .contact-giant{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:clamp(52px,10vw,160px);
+    letter-spacing:-0.04em;
+    line-height:0.9;
+    margin-bottom:60px;
+  }
+  .contact-giant em{font-family:var(--serif);font-style:italic;font-weight:400;}
+  .contact-giant .g{
+    background:var(--grad-main);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  .contact-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    margin-bottom:60px;
+  }
+  @media (max-width:800px){.contact-grid{grid-template-columns:1fr;}}
+  .contact-card{
+    padding:32px;
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:24px;
+    background:rgba(255,255,255,0.02);
+    text-decoration:none;
+    color:var(--ink);
+    display:flex;flex-direction:column;gap:12px;
+    transition:all 0.4s;
+    position:relative;
+    overflow:hidden;
+  }
+  .contact-card:hover{
+    background:rgba(255,255,255,0.05);
+    border-color:rgba(255,255,255,0.25);
+    transform:translateY(-4px);
+  }
+  .contact-card .label{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .contact-card .value{
+    font-family:var(--display);
+    font-size:clamp(18px,2vw,24px);
+    font-weight:600;
+    letter-spacing:-0.01em;
+    word-break:break-all;
+  }
+  .contact-card .arrow{
+    align-self:flex-end;
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:28px;
+    transition:transform 0.3s;
+  }
+  .contact-card:hover .arrow{transform:translate(4px,-4px);}
+
+  footer{
+    border-top:1px solid rgba(255,255,255,0.08);
+    padding:32px 6vw;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:0.05em;
+  }
+  @media (max-width:600px){footer{flex-direction:column;gap:12px;text-align:center;}}
+
+  /* reveal on scroll */
+  .reveal{opacity:0;transform:translateY(40px);transition:all 1s cubic-bezier(0.16,1,0.3,1);}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  @media (max-width:768px){
+    .float-tool.t1{width:80px;height:80px;top:8%;right:5%;}
+    .float-tool.t2{width:60px;height:60px;top:50%;right:8%;}
+    .float-tool.t3{display:none;}
+    .float-tool.t4{display:none;}
+    nav{top:40px;}
+    nav a{padding:6px 10px;font-size:11px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="mesh-bg"></div>
+<div class="mesh-blob-3"></div>
+
+<!-- top ticker -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span><span class="dot"></span>AVAILABLE FOR CONTENT CREATOR ROLES</span>
+    <span>VIDEO EDITOR</span>
+    <span><span class="dot"></span>SHORT-FORM STORYTELLER</span>
+    <span>CAPCUT · REELS · SCRIPTING</span>
+    <span><span class="dot"></span>ISRO CERTIFIED WRITER</span>
+    <span>HYDERABAD, INDIA</span>
+    <span><span class="dot"></span>AVAILABLE FOR CONTENT CREATOR ROLES</span>
+    <span>VIDEO EDITOR</span>
+    <span><span class="dot"></span>SHORT-FORM STORYTELLER</span>
+    <span>CAPCUT · REELS · SCRIPTING</span>
+    <span><span class="dot"></span>ISRO CERTIFIED WRITER</span>
+    <span>HYDERABAD, INDIA</span>
+  </div>
+</div>
+
+<nav>
+  <a href="#home">Home</a>
+  <a href="#about">About</a>
+  <a href="#work">Work</a>
+  <a href="#skills">Skills</a>
+  <a href="#isro">ISRO</a>
+  <a href="#contact">Contact</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <!-- floating 3D editing tools -->
+  <div class="floating-scene" aria-hidden="true">
+    <!-- Play button -->
+    <div class="float-tool t1">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff2e93"/>
+            <stop offset="100%" stop-color="#ff8a3d"/>
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="50" fill="url(#g1)"/>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="#fff8ee" stroke-width="2" opacity="0.4"/>
+        <polygon points="48,40 48,80 82,60" fill="#fff8ee"/>
+      </svg>
+    </div>
+    <!-- Scissors / cut -->
+    <div class="float-tool t2">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4df0ff"/>
+            <stop offset="100%" stop-color="#8a5cff"/>
+          </linearGradient>
+        </defs>
+        <rect x="10" y="10" width="80" height="80" rx="18" fill="url(#g2)"/>
+        <g stroke="#fff8ee" stroke-width="3" fill="none" stroke-linecap="round">
+          <circle cx="30" cy="70" r="8"/>
+          <circle cx="70" cy="70" r="8"/>
+          <path d="M30,70 L75,25"/>
+          <path d="M70,70 L25,25"/>
+        </g>
+      </svg>
+    </div>
+    <!-- Film strip -->
+    <div class="float-tool t3">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffd93d"/>
+            <stop offset="100%" stop-color="#ff2e93"/>
+          </linearGradient>
+        </defs>
+        <rect x="20" y="15" width="80" height="90" rx="8" fill="url(#g3)"/>
+        <rect x="28" y="25" width="64" height="18" fill="#0a0514" opacity="0.8"/>
+        <rect x="28" y="51" width="64" height="18" fill="#0a0514" opacity="0.8"/>
+        <rect x="28" y="77" width="64" height="18" fill="#0a0514" opacity="0.8"/>
+        <circle cx="16" cy="30" r="3" fill="#fff8ee"/>
+        <circle cx="16" cy="60" r="3" fill="#fff8ee"/>
+        <circle cx="16" cy="90" r="3" fill="#fff8ee"/>
+        <circle cx="104" cy="30" r="3" fill="#fff8ee"/>
+        <circle cx="104" cy="60" r="3" fill="#fff8ee"/>
+        <circle cx="104" cy="90" r="3" fill="#fff8ee"/>
+      </svg>
+    </div>
+    <!-- Camera -->
+    <div class="float-tool t4">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#a8ff5c"/>
+            <stop offset="100%" stop-color="#4df0ff"/>
+          </linearGradient>
+        </defs>
+        <rect x="10" y="25" width="80" height="55" rx="10" fill="url(#g4)"/>
+        <rect x="32" y="15" width="20" height="12" fill="url(#g4)"/>
+        <circle cx="50" cy="52" r="18" fill="#0a0514" opacity="0.85"/>
+        <circle cx="50" cy="52" r="11" fill="#fff8ee" opacity="0.9"/>
+        <circle cx="50" cy="52" r="5" fill="#0a0514"/>
+        <circle cx="74" cy="36" r="3" fill="#ff2e93"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="hero-meta">
+    <span class="pulse"></span>
+    <span>CONTENT CREATOR · VIDEO EDITOR · STORYTELLER</span>
+  </div>
+
+  <h1 class="hero-name">
+    <span class="line"><span class="word">Kalyan</span></span>
+    <span class="line"><span class="word italic">tells stories</span></span>
+    <span class="line"><span class="word gradient">in motion.</span></span>
+  </h1>
+
+  <p class="hero-tagline">
+    I'm <strong>Koneti Pavan Kalyan</strong> — I create engaging short-form content using storytelling, performance, and editing to capture attention. From comedy reels to ISRO-certified writing, I bring ideas to life frame by frame.
+  </p>
+
+  <div class="hero-cta">
+    <a href="#work" class="btn btn-primary"><span>▶ Watch My Work</span></a>
+    <a href="#contact" class="btn btn-ghost">Get in touch →</a>
+  </div>
+
+  <!-- bottom reel strip -->
+  <div class="reel-strip">
+    <div class="reel-strip-item"></div>
+    <div class="reel-strip-item"></div>
+    <div class="reel-strip-item"></div>
+    <div class="reel-strip-item"></div>
+    <div class="reel-strip-item"></div>
+    <div class="reel-strip-item"></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-label reveal">About / 01</div>
+  <h2 class="section-title reveal">The person <em>behind</em> <span class="g">the lens.</span></h2>
+
+  <div class="about-grid">
+    <div class="about-text reveal">
+      <p>I'm a content creator with a background in <strong>Computer Science</strong>, but my real interest is in storytelling and video content.</p>
+      <p>During college, I created <span class="highlight">comedy reels</span> and also worked on a <span class="highlight">short film as a writer</span>. This helped me understand how to engage an audience, structure content, and deliver ideas clearly.</p>
+      <p>I enjoy creating short-form videos that are simple, engaging, and easy to understand. I'm now focused on improving my skills in content creation, editing, and scripting — looking to contribute to a team where I can create <strong>impactful content</strong>.</p>
+    </div>
+
+    <div class="stats reveal">
+      <div class="stat">
+        <div class="stat-num">4+</div>
+        <div class="stat-label">Published Reels</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">1</div>
+        <div class="stat-label">ISRO Short Film</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Ideas in the pipeline</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">CS</div>
+        <div class="stat-label">Engineering Background</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORK / REELS -->
+<section id="work">
+  <div class="section-label reveal">Selected Work / 02</div>
+  <h2 class="section-title reveal">Short-form that <em>stops</em> <span class="g">the scroll.</span></h2>
+
+  <!-- FEATURED REEL -->
+  <div class="featured-reel reveal">
+    <span class="featured-badge">★ Best Work</span>
+    <div class="featured-embed">
+      <iframe src="https://www.instagram.com/reel/DENWrAizz6F/embed" allowtransparency="true" allow="encrypted-media" scrolling="no"></iframe>
+    </div>
+    <div class="featured-info">
+      <h3>The reel that <em>hooks</em> in 3 seconds.</h3>
+      <p>My strongest piece of short-form content — built around punchy timing, expressive performance, and tight editing. A clear example of how I approach the craft: grab attention, hold it, land the payoff.</p>
+      <div class="tag-row">
+        <span class="tag">Comedy</span>
+        <span class="tag">Acting</span>
+        <span class="tag">CapCut</span>
+        <span class="tag">Fast Pacing</span>
+        <span class="tag">Subtitles</span>
+      </div>
+      <a href="https://www.instagram.com/reel/DENWrAizz6F/" target="_blank" class="btn btn-ghost">Open on Instagram ↗</a>
+    </div>
+  </div>
+
+  <!-- REELS GRID -->
+  <div class="reels-grid">
+    <div class="reel-card reveal">
+      <div class="reel-embed">
+        <iframe src="https://www.instagram.com/reel/DUGFEMnD_tW/embed" allowtransparency="true" allow="encrypted-media" scrolling="no"></iframe>
+      </div>
+      <div class="reel-info">
+        <span class="reel-info-text">Comedy · Performance</span>
+        <span class="reel-info-num">02</span>
+      </div>
+    </div>
+
+    <div class="reel-card reveal">
+      <div class="reel-embed">
+        <iframe src="https://www.instagram.com/reel/DFaNzlpypJQ/embed" allowtransparency="true" allow="encrypted-media" scrolling="no"></iframe>
+      </div>
+      <div class="reel-info">
+        <span class="reel-info-text">Expression · Timing</span>
+        <span class="reel-info-num">03</span>
+      </div>
+    </div>
+
+    <div class="reel-card reveal">
+      <div class="reel-embed">
+        <iframe src="https://www.instagram.com/reel/DA7ukbAPktx/embed" allowtransparency="true" allow="encrypted-media" scrolling="no"></iframe>
+      </div>
+      <div class="reel-info">
+        <span class="reel-info-text">Editing · Hook</span>
+        <span class="reel-info-num">04</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills" style="padding-bottom:60px;">
+  <div class="section-label reveal">Toolkit / 03</div>
+  <h2 class="section-title reveal">Skills, <em>stacked.</em></h2>
+</section>
+
+<div class="skills-marquee">
+  <div class="skills-track">
+    <div class="skill-chip"><span class="dot"></span>Content Ideation</div>
+    <div class="skill-chip"><span class="dot"></span>Script Writing</div>
+    <div class="skill-chip"><span class="dot"></span>Storytelling</div>
+    <div class="skill-chip"><span class="dot"></span>Acting / Performance</div>
+    <div class="skill-chip"><span class="dot"></span>CapCut Editing</div>
+    <div class="skill-chip"><span class="dot"></span>Reels Production</div>
+    <div class="skill-chip"><span class="dot"></span>Subtitles &amp; Timing</div>
+    <div class="skill-chip"><span class="dot"></span>Transitions &amp; Cuts</div>
+    <!-- duplicate for loop -->
+    <div class="skill-chip"><span class="dot"></span>Content Ideation</div>
+    <div class="skill-chip"><span class="dot"></span>Script Writing</div>
+    <div class="skill-chip"><span class="dot"></span>Storytelling</div>
+    <div class="skill-chip"><span class="dot"></span>Acting / Performance</div>
+    <div class="skill-chip"><span class="dot"></span>CapCut Editing</div>
+    <div class="skill-chip"><span class="dot"></span>Reels Production</div>
+    <div class="skill-chip"><span class="dot"></span>Subtitles &amp; Timing</div>
+    <div class="skill-chip"><span class="dot"></span>Transitions &amp; Cuts</div>
+  </div>
+</div>
+
+<div class="skills-marquee">
+  <div class="skills-track">
+    <div class="skill-chip"><span class="dot"></span>Audience Engagement</div>
+    <div class="skill-chip"><span class="dot"></span>Creative Thinking</div>
+    <div class="skill-chip"><span class="dot"></span>Fast Learner</div>
+    <div class="skill-chip"><span class="dot"></span>Scene Flow</div>
+    <div class="skill-chip"><span class="dot"></span>Hook Writing</div>
+    <div class="skill-chip"><span class="dot"></span>Pacing</div>
+    <div class="skill-chip"><span class="dot"></span>Visual Storytelling</div>
+    <div class="skill-chip"><span class="dot"></span>Trend Analysis</div>
+    <!-- duplicate -->
+    <div class="skill-chip"><span class="dot"></span>Audience Engagement</div>
+    <div class="skill-chip"><span class="dot"></span>Creative Thinking</div>
+    <div class="skill-chip"><span class="dot"></span>Fast Learner</div>
+    <div class="skill-chip"><span class="dot"></span>Scene Flow</div>
+    <div class="skill-chip"><span class="dot"></span>Hook Writing</div>
+    <div class="skill-chip"><span class="dot"></span>Pacing</div>
+    <div class="skill-chip"><span class="dot"></span>Visual Storytelling</div>
+    <div class="skill-chip"><span class="dot"></span>Trend Analysis</div>
+  </div>
+</div>
+
+<!-- ISRO / PROJECTS -->
+<section id="isro">
+  <div class="section-label reveal">Signature Project / 04</div>
+  <h2 class="section-title reveal">Wrote a short film for <em>space.</em></h2>
+
+  <div class="isro-card reveal">
+    <div class="isro-visual">
+      <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="earth" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#4df0ff"/>
+            <stop offset="70%" stop-color="#8a5cff"/>
+            <stop offset="100%" stop-color="#14062b"/>
+          </radialGradient>
+          <linearGradient id="rocket" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff2e93"/>
+            <stop offset="100%" stop-color="#ffd93d"/>
+          </linearGradient>
+        </defs>
+
+        <!-- stars -->
+        <g fill="#fff8ee">
+          <circle cx="50" cy="80" r="1.5" opacity="0.8"/>
+          <circle cx="320" cy="60" r="1" opacity="0.6"/>
+          <circle cx="360" cy="140" r="1.8" opacity="0.9"/>
+          <circle cx="80" cy="200" r="1" opacity="0.5"/>
+          <circle cx="30" cy="320" r="1.2" opacity="0.7"/>
+          <circle cx="370" cy="300" r="1.5" opacity="0.8"/>
+          <circle cx="280" cy="350" r="1" opacity="0.6"/>
+          <circle cx="150" cy="50" r="1.3" opacity="0.7"/>
+          <circle cx="220" cy="100" r="1" opacity="0.5"/>
+          <circle cx="190" cy="370" r="1.5" opacity="0.9"/>
+        </g>
+
+        <!-- earth -->
+        <circle cx="280" cy="280" r="90" fill="url(#earth)" opacity="0.9"/>
+        <circle cx="280" cy="280" r="90" fill="none" stroke="#4df0ff" stroke-width="1" opacity="0.3"/>
+        <circle cx="280" cy="280" r="110" fill="none" stroke="#4df0ff" stroke-width="1" opacity="0.2" stroke-dasharray="4 4"/>
+
+        <!-- rocket -->
+        <g transform="translate(130,140) rotate(-25)">
+          <path d="M0,0 L30,-80 L60,0 Z" fill="url(#rocket)"/>
+          <rect x="15" y="0" width="30" height="40" fill="#fff8ee"/>
+          <circle cx="30" cy="-40" r="8" fill="#0a0514"/>
+          <circle cx="30" cy="-40" r="5" fill="#4df0ff"/>
+          <path d="M0,0 L-10,25 L15,15 Z" fill="#ff2e93"/>
+          <path d="M60,0 L70,25 L45,15 Z" fill="#ff2e93"/>
+          <path d="M15,40 L30,70 L45,40 Z" fill="#ffd93d" opacity="0.9"/>
+          <path d="M20,40 L30,60 L40,40 Z" fill="#ff8a3d"/>
+        </g>
+
+        <!-- orbit path -->
+        <ellipse cx="200" cy="200" rx="150" ry="80" fill="none" stroke="#fff8ee" stroke-width="1" opacity="0.15" stroke-dasharray="3 6" transform="rotate(-20 200 200)"/>
+
+        <!-- ISRO text -->
+        <text x="200" y="395" text-anchor="middle" fill="#4df0ff" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="4" opacity="0.8">ISRO · SHAR · WSW</text>
+      </svg>
+    </div>
+
+    <div class="isro-content">
+      <h3>Short Film — <em>World Space Week</em></h3>
+      <p>Worked as a <strong>writer</strong> for a short film as part of <strong>World Space Week</strong> conducted by <strong style="color:var(--c-cyan);">ISRO</strong> at the Satish Dhawan Space Centre, Sriharikota.</p>
+      <p>This experience sharpened my understanding of <strong>story structure</strong>, <strong>scene flow</strong>, and how to connect with an audience through visual storytelling on a meaningful theme.</p>
+
+      <div class="isro-meta">
+        <div class="isro-meta-item">
+          <strong>Role</strong>
+          Writer
+        </div>
+        <div class="isro-meta-item">
+          <strong>Organization</strong>
+          ISRO — Satish Dhawan Space Centre
+        </div>
+        <div class="isro-meta-item">
+          <strong>Event</strong>
+          World Space Week
+        </div>
+        <div class="isro-meta-item">
+          <strong>Location</strong>
+          Sriharikota
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="tag" style="border-color:rgba(77,240,255,0.3);color:var(--c-cyan);">Certified</span>
+        <span class="tag">Story Structure</span>
+        <span class="tag">Scene Flow</span>
+        <span class="tag">Visual Storytelling</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY FIT -->
+<section>
+  <div class="section-label reveal">Why Me / 05</div>
+  <h2 class="section-title reveal">What I bring <em>to</em> <span class="g">your team.</span></h2>
+
+  <div class="fit-grid">
+    <div class="fit-card reveal">
+      <div class="fit-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ff2e93" stroke-width="2" stroke-linecap="round">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+      </div>
+      <h4>Short-Form First</h4>
+      <p>Engaging short-form videos with hooks that work and pacing that lands.</p>
+    </div>
+
+    <div class="fit-card reveal">
+      <div class="fit-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffd93d" stroke-width="2" stroke-linecap="round">
+          <path d="M4 6h16M4 12h10M4 18h16"/>
+        </svg>
+      </div>
+      <h4>Clear Scripts</h4>
+      <p>Simple, clear scripts for reels — built to convert curiosity into watch-time.</p>
+    </div>
+
+    <div class="fit-card reveal">
+      <div class="fit-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4df0ff" stroke-width="2" stroke-linecap="round">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <path d="M7 5v14M17 5v14"/>
+        </svg>
+      </div>
+      <h4>Tight Edits</h4>
+      <p>Fast-paced edits with subtitles, transitions, and cuts that keep eyes locked.</p>
+    </div>
+
+    <div class="fit-card reveal">
+      <div class="fit-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#a8ff5c" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 2"/>
+        </svg>
+      </div>
+      <h4>On-Camera Ready</h4>
+      <p>Comfortable performing or acting when the idea calls for it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="section-label reveal">Contact / 06</div>
+  <h2 class="contact-giant reveal">
+    Let's <em>make</em><br/>
+    <span class="g">something loud.</span>
+  </h2>
+
+  <div class="contact-grid">
+    <a class="contact-card reveal" href="mailto:konetipavankalyan225@gmail.com">
+      <span class="label">Email</span>
+      <span class="value">konetipavankalyan225@gmail.com</span>
+      <span class="arrow">↗</span>
+    </a>
+    <a class="contact-card reveal" href="tel:+919346749582">
+      <span class="label">Phone</span>
+      <span class="value">+91 93467 49582</span>
+      <span class="arrow">↗</span>
+    </a>
+    <a class="contact-card reveal" href="https://www.instagram.com/" target="_blank">
+      <span class="label">Instagram</span>
+      <span class="value">Watch the reels</span>
+      <span class="arrow">↗</span>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div>© 2026 Koneti Pavan Kalyan · Portfolio</div>
+  <div>Designed for the scroll. Built for attention.</div>
+</footer>
+
+<script>
+  // custom cursor
+  const dot = document.querySelector('.cursor-dot');
+  const ring = document.querySelector('.cursor-ring');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX;my=e.clientY;
+    dot.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`;
+  });
+  function animRing(){
+    rx+=(mx-rx)*0.18;
+    ry+=(my-ry)*0.18;
+    ring.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+    requestAnimationFrame(animRing);
+  }
+  animRing();
+
+  // hover targets for cursor
+  document.querySelectorAll('a, button, .reel-card, .stat, .fit-card, .contact-card').forEach(el=>{
+    el.addEventListener('mouseenter',()=>document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-hover'));
+  });
+
+  // reveal on scroll
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:0.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // parallax for floating tools
+  const tools = document.querySelectorAll('.float-tool');
+  document.addEventListener('mousemove',e=>{
+    const x=(e.clientX/window.innerWidth-0.5);
+    const y=(e.clientY/window.innerHeight-0.5);
+    tools.forEach((t,i)=>{
+      const intensity=(i+1)*10;
+      t.style.translate=`${x*intensity}px ${y*intensity}px`;
+    });
+  });
+
+  // smooth scroll
+  document.querySelectorAll('nav a').forEach(a=>{
+    a.addEventListener('click',e=>{
+      e.preventDefault();
+      const target=document.querySelector(a.getAttribute('href'));
+      if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+</script>
+
+</body>
+</html>
